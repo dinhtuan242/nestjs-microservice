@@ -24,7 +24,7 @@
       "@app/common/*": [
         "libs/common/src/*"
       ]
-    },
+    }
   },
   "watchOptions": {
     "watchFile": "fixedPollingInterval"
