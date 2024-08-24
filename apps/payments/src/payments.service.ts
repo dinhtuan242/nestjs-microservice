@@ -5,26 +5,31 @@ import { CreateChargeDto } from '@app/common';
 
 @Injectable()
 export class PaymentsService {
-  private readonly stripe = new Stripe(
-    this.configService.get('STRIPE_SECRET_KEY'),
-    {
-      apiVersion: '2023-10-16',
-    },
-  );
+  private stripe: Stripe;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly configService: ConfigService) {
+    const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
+    if (!secretKey) {
+      throw new Error('Stripe secret key not defined');
+    }
+    this.stripe = new Stripe(secretKey, {
+      apiVersion: '2024-06-20',
+    });
+  }
 
-  async createCharge({ card, amount }: CreateChargeDto) {
-    const paymentMethod = await this.stripe.paymentMethods.create({
-      type: 'card',
-      card,
-    });
-    return await this.stripe.paymentIntents.create({
-      payment_method: paymentMethod.id,
-      amount: amount * 100,
-      confirm: true,
-      payment_method_types: ['card'],
-      currency: 'usd',
-    });
+  async createCharge({ amount }: CreateChargeDto) {
+    try {
+      // Create a payment intent
+      return await this.stripe.paymentIntents.create({
+        payment_method: 'pm_card_visa',
+        amount: amount * 100, // Convert amount to cents
+        confirm: true,
+        payment_method_types: ['card'],
+        currency: 'usd',
+      });
+    } catch (error) {
+      console.error('Payment creation failed', error);
+      throw error;
+    }
   }
 }
